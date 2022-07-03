@@ -4,6 +4,7 @@ import CANNON, { Vec3 } from 'cannon';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import * as dat from 'dat.gui';
 import { Interaction } from 'three.interaction';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 
 /**
  * Debug
@@ -47,12 +48,8 @@ const debugObject = {
   },
   createWalls: () => {
     let counter = 0;
+    const z = -3;
     for (let i = 1; i <= 3; i++) {
-      // createBox(0.5, 0.2, 0.2, new THREE.Vector3(-1 + offset, counter, 0));
-      // createBox(0.5, 0.2, 0.2, new THREE.Vector3(-0.49 + offset, counter, 0));
-      // createBox(0.5, 0.2, 0.2, new THREE.Vector3(0.02 + offset, counter, 0));
-      // createBox(0.5, 0.2, 0.2, new THREE.Vector3(0.53 + offset, counter, 0));
-      // createBox(0.5, 0.2, 0.2, new THREE.Vector3(1.04 + offset, counter, 0));
       createBox(
         0.8,
         0.8,
@@ -60,7 +57,7 @@ const debugObject = {
         {
           x: -0.6,
           y: counter + 0.4,
-          z: 1
+          z
         },
         true
       );
@@ -72,7 +69,7 @@ const debugObject = {
         {
           x: 1,
           y: counter + 0.4,
-          z: 1
+          z
         },
         true
       );
@@ -84,7 +81,7 @@ const debugObject = {
         {
           x: 0.2,
           y: counter + 0.4,
-          z: 1
+          z
         },
         true
       );
@@ -96,39 +93,14 @@ const debugObject = {
         {
           x: 1.8,
           y: counter + 0.4,
-          z: 1
+          z
         },
         true
       );
       counter += 0.8;
-      // createBox(
-      //   0,
-      //   1 + offset,
-      //   1,
-      //   {
-      //     x: 1,
-      //     y: 1,
-      //     z: 1
-      //   },
-      //   true
-      // );
-
-      // createBox(
-      //   -1,
-      //   1 + offset,
-      //   1,
-      //   {
-      //     x: 1,
-      //     y: 1,
-      //     z: 1
-      //   },
-      //   true
-      // );
     }
   }
 };
-// gui.add(debugObject, 'createSphere');
-// gui.add(debugObject, 'front');
 
 gui.add(debugObject, 'createWalls');
 gui.add(debugObject, 'createBox');
@@ -188,6 +160,31 @@ const concretePlasticContact = new CANNON.ContactMaterial(defaultMaterial, defau
 world.addContactMaterial(concretePlasticContact);
 world.defaultContactMaterial = concretePlasticContact;
 
+// cannon
+const cannon = new THREE.Mesh(
+  new THREE.BoxBufferGeometry(1, 1),
+  new THREE.MeshStandardMaterial({ color: 'grey', metalness: 0.9, roughness: 0.2 })
+);
+cannon.position.z = 4;
+cannon.position.y = 0.5;
+cannon.scale.set(1, 0.5, 0.9);
+scene.add(cannon);
+
+
+const gltfLoader = new GLTFLoader();
+gltfLoader.load('cannon.glb', (gltf) => {
+  console.log(gltf);
+  // gltf.scene.traverse((c) => {
+  //   if (c.isMesh) console.log(c);
+  // });
+  // gltf.scene.m
+  // gltf.scene.position.set(cannon.position);
+  const can = gltf.scene.children[0];
+  can.position.set(0, 0.5, 4);
+  // gltf.scene.rotation.set(90, 0, 0);
+  scene.add(gltf.scene);
+});
+
 // const sphereShape = new CANNON.Sphere(0.5);
 // const sphereBody = new CANNON.Body({
 //   mass: 1,
@@ -238,15 +235,6 @@ floor.receiveShadow = true;
 floor.rotation.x = -Math.PI * 0.5;
 scene.add(floor);
 
-// cannon
-const cannon = new THREE.Mesh(
-  new THREE.BoxBufferGeometry(1, 1),
-  new THREE.MeshStandardMaterial({ color: 'grey', metalness: 0.9, roughness: 0.2 })
-);
-cannon.position.z = 4;
-cannon.position.y = 0.5;
-cannon.scale.set(1, 0.5, 0.9);
-scene.add(cannon);
 
 const planet1 = new THREE.Mesh(
   new THREE.SphereBufferGeometry(10, 32, 32),
@@ -387,11 +375,11 @@ function createSphere(radius, position, material) {
   world.addBody(body);
 
   const v = new THREE.Vector3(0, 0, -1);
-  const m = new THREE.Vector3(mouse, 0);
-  if (mouse.y > 0.5 || mouse.y < 0) {
-    mouse.y = 0;
-  }
-  const q = new THREE.Quaternion(-mouse.y, -mouse.x, 0);
+
+  if (mouse.y < 0) mouse.y = 0.1;
+  console.log(mouse.y);
+  mouse.y -= 0.2;
+  const q = new THREE.Quaternion(mouse.y, -mouse.x, 0);
   console.log(mouse);
   v.applyQuaternion(q);
   v.multiplyScalar(debugObject.force);
