@@ -46,7 +46,7 @@ const debugObject = {
       scene.remove(object.mesh);
     }
   },
-  createWalls: () => {
+  createBoxWall: () => {
     let counter = 0;
     const z = -3;
     for (let i = 1; i <= 3; i++) {
@@ -102,7 +102,7 @@ const debugObject = {
   }
 };
 
-gui.add(debugObject, 'createWalls');
+gui.add(debugObject, 'createBoxWall');
 gui.add(debugObject, 'createBox');
 gui.add(debugObject, 'force').min(0).max(50);
 gui.add(debugObject, 'reset');
@@ -170,9 +170,10 @@ cannon.position.y = 0.5;
 cannon.scale.set(1, 0.5, 0.9);
 scene.add(cannon);
 
-
 const gltfLoader = new GLTFLoader();
 gltfLoader.load('cannon.glb', (gltf) => {
+  const canGroup = new THREE.Group();
+
   console.log(gltf);
   // gltf.scene.traverse((c) => {
   //   if (c.isMesh) console.log(c);
@@ -180,9 +181,13 @@ gltfLoader.load('cannon.glb', (gltf) => {
   // gltf.scene.m
   // gltf.scene.position.set(cannon.position);
   const can = gltf.scene.children[0];
-  can.position.set(0, 0.5, 4);
+  can.scale.set(0.5, 0.5, 0.5);
+  can.position.set(4.1, 0, 3.5);
+  can.rotation.set(0, 0, 0);
+  canGroup.add(can);
   // gltf.scene.rotation.set(90, 0, 0);
-  scene.add(gltf.scene);
+  // canGroup.rotateY(180);
+  // scene.add(canGroup);
 });
 
 // const sphereShape = new CANNON.Sphere(0.5);
@@ -234,7 +239,6 @@ const floor = new THREE.Mesh(
 floor.receiveShadow = true;
 floor.rotation.x = -Math.PI * 0.5;
 scene.add(floor);
-
 
 const planet1 = new THREE.Mesh(
   new THREE.SphereBufferGeometry(10, 32, 32),
@@ -331,6 +335,57 @@ const intersectionPoint = new THREE.Vector3();
 const raycaster = new THREE.Raycaster();
 const planeNormal = new THREE.Vector3();
 const plane = new THREE.Plane();
+
+window.addEventListener('keydown', (e) => {
+  if (e.key === ' ') {
+    const material = new THREE.MeshStandardMaterial({
+      metalness: 0.3,
+      roughness: 0.4,
+      color: Math.random() * 0xffffff
+    });
+    const position = new Vec3().copy(cannon.position);
+    position.z -= 1;
+    createSphere(0.2, cannon.position, material);
+  }
+
+  if (e.key === 'ArrowRight') {
+    cannon.rotation.y += 100;
+  }
+
+  if (e.key === 'ArrowLeft') {
+    cannon.rotation.y -= 100;
+  }
+});
+let tappedTwice = false;
+function tapHandler(event) {
+  if (!tappedTwice) {
+    tappedTwice = true;
+    setTimeout(function () {
+      tappedTwice = false;
+    }, 300);
+    return false;
+  }
+  event.preventDefault();
+  //action on double tap goes below
+}
+
+window.addEventListener('touchstart', (e) => {
+  tapHandler(e);
+  if (tappedTwice) {
+    document.querySelector('canvas').click();
+  }
+  const clientX = e.touches[0].clientX;
+  const clientY = e.touches[0].clientY;
+  mouse.x = (clientX / window.innerWidth) * 2 - 1;
+  mouse.y = -(clientY / window.innerHeight) * 2 + 1;
+  planeNormal.copy(camera.position).normalize();
+  plane.setFromNormalAndCoplanarPoint(planeNormal, scene.position);
+  raycaster.setFromCamera(mouse, camera);
+  raycaster.ray.intersectPlane(plane, intersectionPoint);
+
+  cannon.rotation.y = -mouse.x;
+  // cannon.lookAt(-mouse.x)
+});
 
 window.addEventListener('mousemove', (e) => {
   mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
