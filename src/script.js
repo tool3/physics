@@ -13,6 +13,7 @@ const gui = new dat.GUI();
 const count = Array(1).fill('');
 const debugObject = {
   force: 20,
+  sound: true,
   front: () => {
     camera.position.set(0, 0, 0);
   },
@@ -49,54 +50,22 @@ const debugObject = {
   createBoxWall: () => {
     let counter = 0;
     const z = -3;
+    const x = [-0.6, 1, 0.2, 1.8];
     for (let i = 1; i <= 3; i++) {
-      createBox(
-        0.8,
-        0.8,
-        0.8,
-        {
-          x: -0.6,
-          y: counter + 0.4,
-          z
-        },
-        true
-      );
+      for (let j = 0; j <= 4; j++) {
+        createBox(
+          0.8,
+          0.8,
+          0.8,
+          {
+            x: x[j],
+            y: counter + 0.7,
+            z
+          },
+          true
+        );
+      }
 
-      createBox(
-        0.8,
-        0.8,
-        0.8,
-        {
-          x: 1,
-          y: counter + 0.4,
-          z
-        },
-        true
-      );
-
-      createBox(
-        0.8,
-        0.8,
-        0.8,
-        {
-          x: 0.2,
-          y: counter + 0.4,
-          z
-        },
-        true
-      );
-
-      createBox(
-        0.8,
-        0.8,
-        0.8,
-        {
-          x: 1.8,
-          y: counter + 0.4,
-          z
-        },
-        true
-      );
       counter += 0.8;
     }
   }
@@ -105,6 +74,7 @@ const debugObject = {
 gui.add(debugObject, 'createBoxWall');
 gui.add(debugObject, 'createBox');
 gui.add(debugObject, 'force').min(0).max(50);
+gui.add(debugObject, 'sound');
 gui.add(debugObject, 'reset');
 
 /**
@@ -123,26 +93,28 @@ const textureLoader = new THREE.TextureLoader();
 const cubeTextureLoader = new THREE.CubeTextureLoader();
 
 const environmentMapTexture = cubeTextureLoader.load([
-  '/textures/environmentMaps/0/px.png',
-  '/textures/environmentMaps/0/nx.png',
-  '/textures/environmentMaps/0/py.png',
-  '/textures/environmentMaps/0/ny.png',
-  '/textures/environmentMaps/0/pz.png',
-  '/textures/environmentMaps/0/nz.png'
+  '/textures/environmentMaps/5/px.png',
+  '/textures/environmentMaps/5/nx.png',
+  '/textures/environmentMaps/5/py.png',
+  '/textures/environmentMaps/5/ny.png',
+  '/textures/environmentMaps/5/pz.png',
+  '/textures/environmentMaps/5/nz.png'
 ]);
 
 const boxTexture = textureLoader.load('/textures/boxFace.jpeg');
-// boxTexture.wrapS = THREE.RepeatWrapping;
+boxTexture.wrapS = THREE.RepeatWrapping;
 
 // PHYSICS
-const sound = new Audio('/sounds/hit.mp3');
+const sound = new Audio('/sounds/box_hit.wav');
 const playSound = (collision) => {
-  const force = collision.contact.getImpactVelocityAlongNormal() > 0.5;
-  const volume = force - Math.random() / force;
-  if (force > 0.5) {
-    sound.volume = volume;
-    sound.currentTime = 0;
-    sound.play();
+  if (debugObject.sound) {
+    const force = collision.contact.getImpactVelocityAlongNormal() > 0.5;
+    const volume = force - Math.random() / force;
+    if (force > 0.7) {
+      sound.volume = volume;
+      sound.currentTime = 0;
+      sound.play();
+    }
   }
 };
 const world = new CANNON.World();
@@ -165,6 +137,7 @@ const cannon = new THREE.Mesh(
   new THREE.BoxBufferGeometry(1, 1),
   new THREE.MeshStandardMaterial({ color: 'grey', metalness: 0.9, roughness: 0.2 })
 );
+cannon.castShadow = true;
 cannon.position.z = 4;
 cannon.position.y = 0.5;
 cannon.scale.set(1, 0.5, 0.9);
@@ -173,21 +146,11 @@ scene.add(cannon);
 const gltfLoader = new GLTFLoader();
 gltfLoader.load('cannon.glb', (gltf) => {
   const canGroup = new THREE.Group();
-
-  console.log(gltf);
-  // gltf.scene.traverse((c) => {
-  //   if (c.isMesh) console.log(c);
-  // });
-  // gltf.scene.m
-  // gltf.scene.position.set(cannon.position);
   const can = gltf.scene.children[0];
   can.scale.set(0.5, 0.5, 0.5);
   can.position.set(4.1, 0, 3.5);
   can.rotation.set(0, 0, 0);
   canGroup.add(can);
-  // gltf.scene.rotation.set(90, 0, 0);
-  // canGroup.rotateY(180);
-  // scene.add(canGroup);
 });
 
 // const sphereShape = new CANNON.Sphere(0.5);
@@ -199,7 +162,7 @@ gltfLoader.load('cannon.glb', (gltf) => {
 
 // sphereBody.applyLocalForce(new CANNON.Vec3(150, 0, 0), new CANNON.Vec3(0, 0, 0));
 // world.addBody(sphereBody);
-const floorShape = new CANNON.Box(new CANNON.Vec3(5, 5, 0.01));
+const floorShape = new CANNON.Box(new CANNON.Vec3(6, 6, 0.15));
 // const floorShape = new CANNON.Plane();
 const floorBody = new CANNON.Body({
   shape: floorShape,
@@ -208,7 +171,13 @@ const floorBody = new CANNON.Body({
 
 world.addBody(floorBody);
 floorBody.quaternion.setFromAxisAngle(new CANNON.Vec3(-1, 0, 0), Math.PI * 0.5);
-
+environmentMapTexture.encoding = THREE.sRGBEncoding;
+scene.background = environmentMapTexture;
+scene.background.rotation = 180;
+scene.environment = environmentMapTexture;
+// scene.environment.offset. = 180;
+// scene.environment.
+// world
 /**
  * Test sphere
  */
@@ -216,7 +185,7 @@ floorBody.quaternion.setFromAxisAngle(new CANNON.Vec3(-1, 0, 0), Math.PI * 0.5);
 //   new THREE.SphereBufferGeometry(0.5, 32, 32),
 //   new THREE.MeshStandardMaterial({
 //     metalness: 0.3,
-//     roughness: 0.4,
+//     roughness: .7,
 //     envMap: environmentMapTexture
 //   })
 // );
@@ -228,11 +197,11 @@ floorBody.quaternion.setFromAxisAngle(new CANNON.Vec3(-1, 0, 0), Math.PI * 0.5);
  * Floor
  */
 const floor = new THREE.Mesh(
-  new THREE.PlaneBufferGeometry(10, 10),
+  new THREE.BoxBufferGeometry(12, 12, 0.3),
   new THREE.MeshStandardMaterial({
-    color: '#777777',
+    color: '#ffffff',
     metalness: 0.3,
-    roughness: 0.4,
+    roughness: 0.7,
     envMap: environmentMapTexture
   })
 );
@@ -327,7 +296,7 @@ const objectsToUpdate = [];
 const sphereGeometry = new THREE.SphereBufferGeometry(1, 20, 20);
 const sphereMaterial = new THREE.MeshStandardMaterial({
   metalness: 0.3,
-  roughness: 0.4
+  roughness: 0.7
 });
 
 const mouse = new THREE.Vector2();
@@ -336,82 +305,119 @@ const raycaster = new THREE.Raycaster();
 const planeNormal = new THREE.Vector3();
 const plane = new THREE.Plane();
 
-window.addEventListener('keydown', (e) => {
-  if (e.key === ' ') {
-    const material = new THREE.MeshStandardMaterial({
-      metalness: 0.3,
-      roughness: 0.4,
-      color: Math.random() * 0xffffff
-    });
-    const position = new Vec3().copy(cannon.position);
-    position.z -= 1;
-    createSphere(0.2, cannon.position, material);
-  }
+// cannon.lookAt(0, 0, 0);
 
-  if (e.key === 'ArrowRight') {
-    cannon.rotation.y += 100;
-  }
-
-  if (e.key === 'ArrowLeft') {
-    cannon.rotation.y -= 100;
-  }
-});
-let tappedTwice = false;
-function tapHandler(event) {
-  if (!tappedTwice) {
-    tappedTwice = true;
-    setTimeout(function () {
-      tappedTwice = false;
-    }, 300);
-    return false;
-  }
-  event.preventDefault();
-  //action on double tap goes below
-}
-
-window.addEventListener('touchstart', (e) => {
-  tapHandler(e);
-  if (tappedTwice) {
-    document.querySelector('canvas').click();
-  }
-  const clientX = e.touches[0].clientX;
-  const clientY = e.touches[0].clientY;
-  mouse.x = (clientX / window.innerWidth) * 2 - 1;
-  mouse.y = -(clientY / window.innerHeight) * 2 + 1;
-  planeNormal.copy(camera.position).normalize();
-  plane.setFromNormalAndCoplanarPoint(planeNormal, scene.position);
-  raycaster.setFromCamera(mouse, camera);
-  raycaster.ray.intersectPlane(plane, intersectionPoint);
-
-  cannon.rotation.y = -mouse.x;
-  // cannon.lookAt(-mouse.x)
-});
-
-window.addEventListener('mousemove', (e) => {
-  mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
-  mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
-  planeNormal.copy(camera.position).normalize();
-  plane.setFromNormalAndCoplanarPoint(planeNormal, scene.position);
-  raycaster.setFromCamera(mouse, camera);
-  raycaster.ray.intersectPlane(plane, intersectionPoint);
-
-  cannon.rotation.y = -mouse.x;
-  // cannon.lookAt(-mouse.x)
-});
-
-window.addEventListener('click', (event) => {
-  if (event.altKey) return;
+function shootSphere() {
   const material = new THREE.MeshStandardMaterial({
     metalness: 0.3,
-    roughness: 0.4,
+    roughness: 0.7,
     color: Math.random() * 0xffffff
   });
   const position = new Vec3().copy(cannon.position);
   position.z -= 1;
-  createSphere(0.2, cannon.position, material);
+
+  const direction = cannon.getWorldDirection();
+
+  direction.z = -direction.z;
+  direction.x = -direction.x;
+  direction.y = -direction.y;
+
+  const qu = new THREE.Quaternion(direction.x, direction.y, direction.z, direction.x);
+  createSphere(0.2, cannon.position, material, qu);
+}
+
+window.addEventListener('keydown', (e) => {
+  if (e.key === 'ArrowRight') {
+    cannon.rotation.y -= 0.1;
+  }
+
+  if (e.key === 'ArrowLeft') {
+    cannon.rotation.y += 0.1;
+  }
+
+  if (e.key === 'ArrowUp') {
+    cannon.rotation.x += 0.1;
+  }
+
+  if (e.key === 'ArrowDown') {
+    cannon.rotation.x -= 0.1;
+  }
+
+  if (e.key === ' ') {
+    // const arrow = new THREE.ArrowHelper(direction, cannon.getWorldPosition(), 100, Math.random() * 0xffffff);
+    // scene.add(arrow);
+    shootSphere();
+  }
+});
+// let tappedTwice = false;
+// function tapHandler(event) {
+//   event.preventDefault();
+//   if (!tappedTwice) {
+//     console.log('okay');
+//     tappedTwice = true;
+//     setTimeout(function () {
+//       tappedTwice = false;
+//     }, 300);
+//     return false;
+//   }
+
+//   //action on double tap goes below
+// }
+
+window.addEventListener('touchstart', (e) => {
+  console.log(e);
+  const mouse = new THREE.Vector2();
+  const targetX = e.targetTouches[0].clientX;
+  const targetY = e.targetTouches[0].clientY;
+  const targetH = e.target.clientHeight;
+  mouse.x = (targetX / window.innerWidth) * 2 - 1;
+  mouse.y = -(targetY / window.innerHeight) * 2 + 1;
+  // cannon.rotation.y -= 0.1;
+  cannon.lookAt(mouse.x, mouse.y * 4);
+
+  console.log(mouse);
+  shootSphere();
 });
 
-function createSphere(radius, position, material) {
+// window.addEventListener('mousemove', (e) => {
+
+//   planeNormal.copy(camera.position).normalize();
+//   plane.setFromNormalAndCoplanarPoint(planeNormal, scene.position);
+//   raycaster.setFromCamera(mouse, camera);
+//   raycaster.ray.intersectPlane(plane, intersectionPoint);
+
+//   cannon.rotation.y = -mouse.x;
+//   // cannon.lookAt(-mouse.x)
+// });
+
+const sphereMat = new THREE.MeshStandardMaterial({
+  metalness: 0.3,
+  roughness: 0.7,
+  color: Math.random() * 0xffffff
+});
+
+// window.addEventListener('click', (event) => {
+//   if (event.altKey) return;
+
+//   const position = new Vec3().copy(cannon.position);
+//   position.z -= 1;
+
+//   console.log(cannon.geometry);
+//   raycaster.set(cannon.position, cannon.rotation.y);
+//   // raycaster.ray.direction.set(cannon.position);
+//   const intersections = raycaster.intersectObjects(scene.children);
+
+//   const direction = cannon.getWorldDirection();
+
+//   direction.z = -direction.z;
+//   direction.x = -direction.x;
+//   direction.y = mouse.y;
+//   const arrow = new THREE.ArrowHelper(direction, cannon.getWorldPosition(), 100, Math.random() * 0xffffff);
+//   scene.add(arrow);
+//   createSphere(0.2, cannon.position, sphereMat);
+// });
+
+function createSphere(radius, position, material, direction = new THREE.Quaternion(mouse.y, -mouse.x, 0)) {
   const mesh = new THREE.Mesh(sphereGeometry, material);
   mesh.scale.set(radius, radius, radius);
   mesh.castShadow = true;
@@ -431,11 +437,11 @@ function createSphere(radius, position, material) {
 
   const v = new THREE.Vector3(0, 0, -1);
 
-  if (mouse.y < 0) mouse.y = 0.1;
-  console.log(mouse.y);
-  mouse.y -= 0.2;
-  const q = new THREE.Quaternion(mouse.y, -mouse.x, 0);
-  console.log(mouse);
+  // if (mouse.y < 0) mouse.y = 0.1;
+
+  // mouse.y -= 0.2;
+  const q = direction;
+
   v.applyQuaternion(q);
   v.multiplyScalar(debugObject.force);
   body.velocity.set(v.x, v.y, v.z);
@@ -444,7 +450,7 @@ function createSphere(radius, position, material) {
 }
 
 const boxGeometry = new THREE.BoxBufferGeometry(1, 1);
-const boxMaterial = new THREE.MeshStandardMaterial({ metalness: 0.3, roughness: 0.4, envMap: environmentMapTexture });
+const boxMaterial = new THREE.MeshStandardMaterial({ metalness: 0.3, roughness: 0.7, envMap: environmentMapTexture });
 
 function createBox(width, height, depth, position, box = false) {
   const mesh = new THREE.Mesh(boxGeometry, boxMaterial);
@@ -462,10 +468,10 @@ function createBox(width, height, depth, position, box = false) {
 
   const shape = new CANNON.Box(new CANNON.Vec3(width / 2, height / 2, depth / 2));
   const body = new CANNON.Body({ shape, mass: 2, position: new CANNON.Vec3(0, 3, 0), material: defaultMaterial });
-  // var axis = new CANNON.Vec3(0, 1, 0);
-  // var angle = 3.3;
-  // body.quaternion.setFromAxisAngle(axis, angle);
-  // body.addEventListener('collide', playSound);
+  const axis = new CANNON.Vec3(0, 1, 0);
+  const angle = 3.3;
+  body.quaternion.setFromAxisAngle(axis, angle);
+  body.addEventListener('collide', playSound);
   body.position.copy(position);
   world.addBody(body);
 
