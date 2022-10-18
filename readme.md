@@ -1,16 +1,8 @@
-# Three.js Journey
+# Fyzi
+An overly simplified (and not the prettiest) physics demo in THREE.JS
 
-## Setup
-Download [Node.js](https://nodejs.org/en/download/).
-Run this followed commands:
+### On desktop
+Move cannon with arrows - Shoot with space
 
-``` bash
-# Install dependencies (only the first time)
-npm install
-
-# Run the local server at localhost:8080
-npm run dev
-
-# Build for production in the dist/ directory
-npm run build
-```
+### On Mobile
+Click target to both point and shoot
